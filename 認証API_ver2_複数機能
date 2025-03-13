@@ -1,0 +1,104 @@
+// Next.js API Routes + SQLite + JWT + 商用利用可能な外部ライブラリを使った認証APIと注文APIの実装
+// 使用技術: Next.js, Prisma (SQLite), bcrypt, jsonwebtoken, axios, helmet, dotenv, stripe, twilio, @sendgrid/mail, winston, multer, cloudinary, joi, redis, swagger-jsdoc, swagger-ui-express, jest, rate-limit
+
+// ディレクトリ構成
+// - /api/auth/register (POST): ユーザー登録
+// - /api/auth/login (POST): ログイン
+// - /api/auth/approve (PATCH): 管理者承認
+// - /api/auth/status (GET): ステータス確認
+// - /api/payment (POST): 支払い処理 (Stripe API)
+// - /api/orders (POST, GET): 注文管理
+// - /api/addresses (POST, GET, PUT, DELETE): 配送先管理
+// - /api/admin/orders (PATCH): 管理者用の注文管理
+// - /api/products (POST, GET, PUT, DELETE): 製品管理
+// - /api/admin/users (GET, PATCH, DELETE): ユーザー管理
+// - /api/reports (GET): レポート生成
+// - /api/notifications (POST): 通知送信 (SMS)
+// - /api/notifications/email (POST): 通知送信 (メール)
+// - /api/logs (GET): ログ管理
+// - /api/dashboard (GET): ダッシュボードデータ取得
+// - /api/search (GET): フィルター & サーチAPI
+// - /api/upload (POST): ファイルアップロードAPI
+// - /api/webhooks/stripe (POST): Stripe Webhook対応API
+// - /api-docs: APIドキュメント (Swagger UI)
+// - /api/rate-limit: API Rate Limiting
+// - /api/auth/api-key (POST): APIキー生成
+
+// 必要なパッケージ
+// npm install bcrypt jsonwebtoken prisma axios helmet dotenv stripe twilio @sendgrid/mail winston multer cloudinary joi redis swagger-jsdoc swagger-ui-express jest rate-limit
+
+import bcrypt from 'bcrypt';
+import jwt from 'jsonwebtoken';
+import axios from 'axios';
+import helmet from 'helmet';
+import { PrismaClient } from '@prisma/client';
+import Stripe from 'stripe';
+import twilio from 'twilio';
+import sendgrid from '@sendgrid/mail';
+import winston from 'winston';
+import multer from 'multer';
+import cloudinary from 'cloudinary';
+import Joi from 'joi';
+import Redis from 'ioredis';
+import swaggerJsDoc from 'swagger-jsdoc';
+import swaggerUi from 'swagger-ui-express';
+import rateLimit from 'express-rate-limit';
+const prisma = new PrismaClient();
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY);
+const twilioClient = twilio(process.env.TWILIO_ACCOUNT_SID, process.env.TWILIO_AUTH_TOKEN);
+sendgrid.setApiKey(process.env.SENDGRID_API_KEY);
+cloudinary.config({
+  cloud_name: process.env.CLOUDINARY_CLOUD_NAME,
+  api_key: process.env.CLOUDINARY_API_KEY,
+  api_secret: process.env.CLOUDINARY_API_SECRET
+});
+const redis = new Redis(process.env.REDIS_URL);
+
+// search.js: フィルター & サーチAPI
+export default async function handler(req, res) {
+  const { type, query, minPrice, maxPrice, startDate, endDate, limit = 10, offset = 0 } = req.query;
+  try {
+    let results = [];
+    const cacheKey = `search:${type}:${query}:${minPrice}:${maxPrice}:${startDate}:${endDate}:${limit}:${offset}`;
+    const cachedResults = await redis.get(cacheKey);
+    if (cachedResults) {
+      return res.status(200).json(JSON.parse(cachedResults));
+    }
+    if (type === 'products') {
+      results = await prisma.product.findMany({
+        where: {
+          name: { contains: query },
+          price: { gte: parseFloat(minPrice) || 0, lte: parseFloat(maxPrice) || Infinity }
+        },
+        take: parseInt(limit),
+        skip: parseInt(offset)
+      });
+    } else if (type === 'orders') {
+      results = await prisma.order.findMany({
+        where: {
+          status: { contains: query },
+          createdAt: {
+            gte: startDate ? new Date(startDate) : undefined,
+            lte: endDate ? new Date(endDate) : undefined
+          }
+        },
+        take: parseInt(limit),
+        skip: parseInt(offset)
+      });
+    } else if (type === 'users') {
+      results = await prisma.user.findMany({
+        where: {
+          username: { contains: query }
+        },
+        take: parseInt(limit),
+        skip: parseInt(offset)
+      });
+    } else {
+      return res.status(400).json({ message: 'Invalid search type' });
+    }
+    await redis.set(cacheKey, JSON.stringify(results), 'EX', 60 * 5);
+    res.status(200).json(results);
+  } catch (error) {
+    res.status(500).json({ message: '検索失敗', error });
+  }
+}

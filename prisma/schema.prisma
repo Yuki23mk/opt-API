@@ -1,0 +1,93 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+model User {
+  id        Int       @id @default(autoincrement())
+  username  String    @unique
+  password  String
+  role      String    @default("user")
+  status    String    @default("pending")
+  createdAt DateTime  @default(now())
+  Cart      Cart[]  @relation("UserToCart") 
+
+  addresses Address[]  // リレーション: 配送先
+  machines  Machine[]  // リレーション: 機械マスタ
+  orders    Order[]    // リレーション: 発注
+}
+
+
+model Product {
+  id          Int     @id @default(autoincrement())
+  name        String
+  price       Float
+  description String?
+  Cart      Cart[]  @relation("ProductToCart")
+  createdAt   DateTime @default(now())
+}
+
+model Order {
+  id          Int      @id @default(autoincrement())
+  userId      Int
+  products    Json     // JSON形式で製品情報を保存
+  totalAmount Float
+  status      String   @default("pending")
+  createdAt   DateTime @default(now())
+
+  User        User     @relation(fields: [userId], references: [id])
+}
+
+model Address {
+  id        Int     @id @default(autoincrement())
+  userId    Int
+  address   String
+  createdAt DateTime @default(now())
+
+  User      User     @relation(fields: [userId], references: [id])
+}
+
+model Machine {
+  id        Int     @id @default(autoincrement())
+  userId    Int
+  name      String
+  model     String?
+  location  String?
+  createdAt DateTime @default(now())
+
+  User      User     @relation(fields: [userId], references: [id])
+}
+
+model Cart {
+  id        Int     @id @default(autoincrement())
+  userId    Int
+  productId Int
+  quantity  Int
+  createdAt DateTime @default(now())
+
+  product Product? @relation("ProductToCart", fields: [productId], references: [id])
+  user    User?    @relation("UserToCart", fields: [userId], references: [id])
+}
+
+model productUsage {
+  id     Int    @id @default(autoincrement())
+  month  String
+  usage  Int
+}
+
+model oilData {
+  id            Int     @id @default(autoincrement())
+  date          DateTime
+  ph            Float
+  concentration Float
+}
