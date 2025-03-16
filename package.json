@@ -5,7 +5,7 @@
   "main": "index.js",
   "scripts": {
     "dev": "next dev",
-    "dev-backend": "next dev",  
+    "dev-backend": "next dev",
     "build": "next build",
     "start": "next start",
     "test": "echo \"Error: no test specified\" && exit 1"
@@ -32,6 +32,7 @@
     "stripe": "^17.7.0",
     "swagger-jsdoc": "^6.2.8",
     "swagger-ui-express": "^5.0.1",
+    "swagger-ui-react": "^5.20.1",
     "twilio": "^5.4.5",
     "winston": "^3.17.0"
   },

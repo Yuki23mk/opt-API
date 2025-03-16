@@ -4,19 +4,18 @@ const prisma = new PrismaClient();
 
 export default async function handler(req, res) {
   if (req.method === 'POST') {
-    const { userId, name, model, location } = req.body;
+    const { userId, machineName, material, assignedPerson } = req.body;
     try {
-      const newMachine = await prisma.machine.create({
+      const machine = await prisma.machine.create({
         data: {
           userId,
-          name,
-          model: model || null,        // model が null なら null を挿入
-          location: location || null   // location が null なら null を挿入
+          machineName,
+          material,
+          assignedPerson
         }
       });
-      res.status(201).json({ message: '機械登録成功', machine: newMachine });
+      res.status(201).json({ message: '機械登録成功', machine });
     } catch (error) {
-      console.error(error);  // エラー内容を表示
       res.status(500).json({ message: '機械登録失敗', error });
     }
   } else if (req.method === 'GET') {
