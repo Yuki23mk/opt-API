@@ -1,4 +1,5 @@
 {
+<<<<<<< HEAD
   "node_modules\\next\\dist\\client\\index.js -> ../pages/_app": {
     "id": "node_modules\\next\\dist\\client\\index.js -> ../pages/_app",
     "files": [
@@ -15,6 +16,12 @@
     "id": "pages\\swagger.js -> swagger-ui-react",
     "files": [
       "static/chunks/_pages-dir-browser_node_modules_swagger-ui-react_index_mjs.js"
+=======
+  "node_modules\\next\\dist\\client\\components\\react-dev-overlay\\utils\\use-websocket.js -> @vercel/turbopack-ecmascript-runtime/browser/dev/hmr-client/hmr-client.ts": {
+    "id": "node_modules\\next\\dist\\client\\components\\react-dev-overlay\\utils\\use-websocket.js -> @vercel/turbopack-ecmascript-runtime/browser/dev/hmr-client/hmr-client.ts",
+    "files": [
+      "static/chunks/_app-pages-browser_node_modules_next_dist_client_dev_noop-turbopack-hmr_js.js"
+>>>>>>> 796b1d4 (全体更新：ローカル変更をGitHubに反映)
     ]
   }
 }
